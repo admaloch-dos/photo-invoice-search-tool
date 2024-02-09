@@ -14,3 +14,5 @@
 </ul>
 <h2>Takeaways:</h2>
 <p>Building this command prompt tool was a challenging yet rewarding experience. It was my first foray into creating a tool of this nature, and it provided valuable learning opportunities. The tool has proven to be highly useful, with a demonstrable increase in efficiency for the photo lab staff.</p>
+
+<p>Note: The Florida Department of State prioritizes security, and version control software is not allowed, limiting the visibility of detailed Git history for this project.</p>
