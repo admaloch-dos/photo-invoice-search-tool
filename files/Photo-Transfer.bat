@@ -18,7 +18,7 @@ set "PHOTO_ORDERS_DIR=%SERVER_LOCATION%\Photo Orders"
 set "FLORIDA_MAPS_LOCATION=\\dosshares1\FlMemory03\Collections\State Library Collection - Florida Map Collection"
 
 :: Set the input file path
-set "input_file=%PHOTO_ORDERS_DIR%\invoice-data.txt"
+set "input_file=%PHOTO_ORDERS_DIR%\files\invoice-data.txt"
 
 ::Intro text
 echo.
@@ -27,8 +27,9 @@ echo ******** Florida Memory Photo Search ********
 echo *********************************************
 
 echo.
+echo Current User: %USERNAME%
+echo.
 echo Current mode: Copy invoice items and create a document of items that are not yet on the cloud
-
 echo.
 
 :: Extract the invoice number from the input file
@@ -50,22 +51,14 @@ if "%invoice_number%"=="" (
 )
 )
 
-:: Check if the invoice # was found. If not throw an error
+:: Check if the invoice # was found. If not set userName
 if "%invoice_number%"=="" (
-    echo No invoice number found. Check to make sure invoice-data.txt has a valid invoice number then try running again.
-    echo Check Instructions.pdf for detailed instructions.
-    echo.
-    type nul > "%input_file%"
-    echo Press any key to exit
-    pause >nul
-    exit /b
+    set "invoice_number= %USERNAME%"
 ) else (
     echo Current invoice !invoice_number!
+    echo.
 )
 
-echo.
-
-:: Extract image IDs from the input file and store them in a variable
 echo Locating item ids...
 set "img_ids="
 for /f "tokens=1,* delims=: " %%a in ('type "%input_file%" ^| find /i "Image Number:"') do (
@@ -75,36 +68,61 @@ for /f "tokens=1,* delims=: " %%a in ('type "%input_file%" ^| find /i "Image Num
     echo !img_id!
 )
 
-:: Extract map IDs from the input file and store them in a variable
 set "map_ids="
-for /f "tokens=1,* delims=: " %%a in ('type "%input_file%" ^| find /i "Map Number:"') do (
-    set "map_id=%%b"
-    set "map_id=!map_id:Map Number: =!"
-    set "map_ids=!map_ids! !map_id!"
-    echo !map_id!
+for /f "tokens=4 delims=: " %%a in ('type "%input_file%" ^| find /i "Map Number:"') do (
+    set "map_id=%%a"
+    set "map_ids=!map_ids!!map_id! "
 )
-     if defined img_ids if defined map_ids (
+
+set "filtered_map_ids="
+for %%b in (%map_ids%) do (
+    set "map_id=%%b"
+    setlocal enabledelayedexpansion
+    if "!map_id!" neq "Scanned" (
+        endlocal & set "filtered_map_ids=!filtered_map_ids!!map_id! "
+    ) else (
+        endlocal
+    )
+)
+
+set "map_ids=%filtered_map_ids%"
+
+
+
+if defined img_ids if defined map_ids (
     set "located_file_ids=%img_ids% %map_ids%"
-    )
-     if defined img_ids if not defined map_ids (
-     set "located_file_ids=%img_ids%"
-    )
-         if defined map_ids if not defined img_ids (
-     set "located_file_ids=%map_ids%"
-    )
+)
 
-    if not defined map_ids if not defined img_ids (
-      for /f "tokens=1,* delims=." %%a in ('type "%input_file%" ^| findstr /v /i "Invoice #"') do (
-            set "located_file_id=%%a"
-            set "located_file_ids=!located_file_ids! !located_file_id!"
-            echo !located_file_id!
-        )
-    )
+if defined img_ids if not defined map_ids (
+    set "located_file_ids=%img_ids%"
+)
 
-    echo.
+if defined map_ids if not defined img_ids (
+    set "located_file_ids=%map_ids%"
+)
+
+if not defined map_ids if not defined img_ids (
+    for /f "tokens=1,* delims=." %%a in ('type "%input_file%" ^| findstr /v /i "Invoice #"') do (
+        set "located_file_id=%%a"
+        set "located_file_ids=!located_file_ids! !located_file_id!"
+        echo !located_file_id!
+    )
+)
+
+IF /I NOT "%map_ids%"=="" (
+    echo %map_ids%
+)
+
+echo.
 
 :: Clear the content of the invoice-data.txt file
 type nul > "%input_file%"
+
+set num_files_found=0
+
+for %%b in (%located_file_ids%) do (
+set /A num_files_found+=1
+)
 
 :: check to see if any invoice #s found
 if "%located_file_ids%"=="" (
@@ -165,6 +183,7 @@ echo Searching for files...
 :: Store the remaining located_file_ids
 set "remaining_ids=%located_file_ids%"
 
+
 :: Loop for Florida Maps directory
 for %%i in (%located_file_ids%) do (
     dir /s /b "%FLORIDA_MAPS_LOCATION%\*%%i*" 2>nul | findstr /r /c:".*" > nul && (
@@ -190,6 +209,7 @@ for %%i in (%located_file_ids%) do (
 set "located_file_ids=%remaining_ids%"
 
 :: Loop for Photo Masters directory
+
 for %%i in (%located_file_ids%) do (
     dir /s /b "%PHOTO_MASTERS_DIR%\*%%i*" 2>nul | findstr /r /c:".*" > nul || (
         echo %%i -- File not on cloud
@@ -211,10 +231,51 @@ for %%i in (%located_file_ids%) do (
     )
 )
 
-:: Add the remaining located_file_ids to the NOT_ON_CLOUD_FILE all at once
+:: crate var for number not on cloud
+set num_not_on_cloud = 0
+
 for %%i in (%remaining_ids%) do (
     echo %%i >> "%NOT_ON_CLOUD_FILE%"
+    set /a num_not_on_cloud+=1
 )
+
+:: crate var for number copied
+set num_files_in_copied_dir=0
+for /R "%COPIED_IMAGES_DIR%" %%f in (*) do (
+    set /a num_files_in_copied_dir+=1
+)
+
+
+
+set "username=%USERNAME%"
+set "csv_file=%PHOTO_ORDERS_DIR%\files\Order-data.csv"
+
+@REM for /f "delims=" %%a in ('cscript //nologo //e:vbscript "%PHOTO_ORDERS_DIR%\files\VBscript.vbs" %num_files_found% %num_files_in_copied_dir%') do set time_saved=%%a
+
+    set /a "overall_minutes=(num_files_found * 2) + (num_files_in_copied_dir * 3)"
+
+set /a "hours=overall_minutes / 60"
+set /a "minutes=overall_minutes %% 60"
+
+set "time_saved=%hours%.%minutes%"
+
+if "%minutes%" lss "10" (
+    set "minutes=0%minutes%"
+)
+
+
+:: Find the next empty row in the CSV file
+for /f "usebackq skip=1 tokens=1 delims=," %%a in (`powershell -Command "$csv = Import-Csv -Path '%csv_file%'; $nextRow = $csv.Count + 1; $nextRow"`) do set "next_row=%%a"
+
+set year=%date:~10,4%
+set month=%date:~4,2%
+set day=%date:~7,2%
+set current_date=%month%/%day%/%year%
+
+:: Add the values to the CSV file
+echo %current_date%, %username%, %invoice_number%,%num_files_found%,%num_files_in_copied_dir%,%num_not_on_cloud%, %overall_minutes% >> "%csv_file%"
+
+
 
 popd
 
