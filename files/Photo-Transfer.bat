@@ -126,7 +126,10 @@ set /A num_files_found+=1
 
 :: check to see if any invoice #s found
 if "%located_file_ids%"=="" (
-    echo No image numbers found. Check to make sure invoice-data.txt has a valid copied invoice form or a list of file items to search for. Check the help.txt form in the Photo Orders folder for more information.
+    echo No file items found.
+    echo Check to make sure Invoice Data has a valid invoice order form or a list of file items.
+    echo Note: The Invoice Data file is automatically erased after every search.
+    echo Check the Instructions PDF for more detailed information on adding search data.
     echo.
     echo Press any key to exit
     pause >nul
@@ -135,7 +138,7 @@ if "%located_file_ids%"=="" (
 
 :: Check if the "Photo Masters" directory exists
 if not exist "%PHOTO_MASTERS_DIR%" (
-    echo Unable to locate the Photo Masters directory. Double check to make sure the directory exists and that it is set to the correct file path in the Photo-Search.bat file. It is currently searching at %PHOTO_MASTERS_DIR%.
+    echo Unable to locate the Photo Masters folder. Double check to make sure the folder exists and that the drive is not having issues with connectivity.
     echo.
     echo Press any key to exit
     pause >nul
@@ -144,7 +147,7 @@ if not exist "%PHOTO_MASTERS_DIR%" (
 
 :: Check if the "Photo Orders" directory exists
 if not exist "%PHOTO_ORDERS_DIR%" (
-    echo Unable to locate the Photo Orders directory. Double check to make sure the directory exists and that it is set to the correct file path in the Photo-Search.bat file. It is currently set to %PHOTO_ORDERS_DIR%.
+    echo Unable to locate the Photo Orders folder. Double check to make sure the folder exists and that the drive is not having issues with connectivity.
     echo.
     echo Press any key to exit
     pause >nul
@@ -153,7 +156,7 @@ if not exist "%PHOTO_ORDERS_DIR%" (
 
 :: Check if the "Photo Orders" directory exists
 if not exist "%FLORIDA_MAPS_LOCATION%" (
-    echo Unable to locate the Florida Maps directory. Double check to make sure the directory exists and that it is set to the correct file path in the Photo-Search.bat file. It is currently set to %FLORIDA_MAPS_LOCATION%.
+    echo Unable to locate the Florida Maps folder. Double check to make sure the folder exists and that the drive is not having issues with connectivity.
     echo.
     echo Press any key to exit
     pause >nul
@@ -196,7 +199,7 @@ for %%i in (%located_file_ids%) do (
                         echo !filePath:*FloridaMemory\=!
                         endlocal
                     ) || (
-                        echo %%f -- File located but failed to transfer
+                        echo %%f -- File located but failed to transfer.
                     )
                 )
             )
