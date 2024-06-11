@@ -7,7 +7,7 @@
 setlocal enabledelayedexpansion
 
 :: Set the server location
-set "SERVER_LOCATION=\\dosshares1\FloridaMemory"
+set "SERVER_LOCATION=\\NVDOS9FLMEM01\flmem01" 2>nul
 
 :: Set the Photo Masters directory location
 set "PHOTO_MASTERS_DIR=%SERVER_LOCATION%\Photo Masters"
@@ -187,38 +187,61 @@ echo Searching for files...
 :: Store the remaining located_file_ids
 set "remaining_ids=%located_file_ids%"
 
-:: Loop for Florida Maps directory
-:: Loop for Florida Maps directory
+
 for %%i in (%located_file_ids%) do (
-    dir /s /b "%FLORIDA_MAPS_LOCATION%\*%%i*" 2>nul | findstr /r /c:".*" > nul && (
-        for /r "%FLORIDA_MAPS_LOCATION%" %%f in (*%%i*) do (
+    for /r "%FLORIDA_MAPS_LOCATION%" %%f in (*%%i*) do (
+        set "fileName=%%~nxf"
+        echo !fileName! | findstr /r /i /c:"^%%i[^0-9]" > nul
+        if !errorlevel! equ 0 (
             if not "%%~xf"==".md5" (
+                set "remaining_ids=!remaining_ids:%%i=!"
                 set "filePath=%%f"
                 setlocal enabledelayedexpansion
-                echo !filePath:*FloridaMemory\=!
+                echo Florida Map Collection\!filePath:*Florida Map Collection\=!
                 endlocal
             )
+        ) else (
+            echo !fileName! | findstr /r /i /c:"^.*[^a-zA-Z]%%i[^0-9]" > nul
+            if !errorlevel! equ 0 (
+                if not "%%~xf"==".md5" (
+                    set "remaining_ids=!remaining_ids:%%i=!"
+                    set "filePath=%%f"
+                    setlocal enabledelayedexpansion
+                    echo Florida Map Collection\!filePath:*Florida Map Collection\=!
+                    endlocal
+                )
+            )
         )
-        set "remaining_ids=!remaining_ids:%%i=!"
     )
 )
 
-:: Remove processed files from located_file_ids
+
 set "located_file_ids=%remaining_ids%"
 
-:: Loop for Photo Masters directory
 for %%i in (%located_file_ids%) do (
-    dir /s /b "%PHOTO_MASTERS_DIR%\*%%i*" 2>nul | findstr /r /c:".*" > nul || (
-        echo %%i -- File not on cloud
-    )
     for /r "%PHOTO_MASTERS_DIR%" %%f in (*%%i*) do (
-        if not "%%~xf"==".md5" (
-            set "filePath=%%f"
-            setlocal enabledelayedexpansion
-            echo !filePath:*FloridaMemory\=!
-            endlocal
+        set "fileName=%%~nxf"
+        echo !fileName! | findstr /r /i /c:"^%%i[^0-9]" > nul
+        if !errorlevel! equ 0 (
+            if not "%%~xf"==".md5" (
+                set "remaining_ids=!remaining_ids:%%i=!"
+                set "filePath=%%f"
+                setlocal enabledelayedexpansion
+                echo Photo Masters\!filePath:*Photo Masters\=!
+                endlocal
+            )
+        ) else (
+            echo !fileName! | findstr /r /i /c:"^.*[^a-zA-Z]%%i[^0-9]" > nul
+            if !errorlevel! equ 0 (
+                if not "%%~xf"==".md5" (
+                    set "remaining_ids=!remaining_ids:%%i=!"
+                    set "filePath=%%f"
+                    setlocal enabledelayedexpansion
+                    echo Photo Masters\!filePath:*Photo Masters\=!
+                    endlocal
+                )
+            )
         )
-        set "remaining_ids=!remaining_ids:%%i=!"
     )
 )
 
@@ -230,6 +253,25 @@ for %%i in (%remaining_ids%) do (
     echo %%i >> "%NOT_ON_CLOUD_FILE%"
     set /a num_not_on_cloud+=1
 )
+
+if "%remaining_ids%" neq "" (
+    set "remaining_ids=%remaining_ids: =%"
+    setlocal enabledelayedexpansion
+    set "trimmed_ids="
+    for %%a in (%remaining_ids%) do (
+        set "trimmed_ids=!trimmed_ids! %%a"
+    )
+    if defined trimmed_ids (
+        echo.
+        echo Files not located on the cloud: !trimmed_ids:~1!
+        echo.
+    ) else (
+        echo All files successfully located.
+        rmdir /s /q "%RESULTING_DIR%"
+    )
+    endlocal
+)
+
 
 set "username=%USERNAME%"
 set "csv_file=%PHOTO_ORDERS_DIR%\files\Order-data.csv"
