@@ -1,7 +1,7 @@
 <h1>Photo Invoice Search Tool</h1>
 
 <h2>About this Project:</h2>
-<p>This is a Windows batch tool designed to streamline the file locating and copying process for invoice orders in the photo lab at Florida Memory. This tool is specifically built to assist in locating files for invoice orders, copying them over, taking note of files that are not yet uploaded, and maintaining accurate records of each processed order. This tool saves valuable time and increases efficiency for the staff.</p>
+<p>This is a Windows batch tool designed to streamline the file locating and copying process for invoice orders in the photo lab at Florida Memory. This tool is specifically built to assist in locating files for photo orders, copying them over, taking note of files that are not yet uploaded, and maintaining accurate records of each processed order. This tool saves valuable time and increases efficiency for the staff.</p>
 
 <h2>Features:</h2>
 <ul>
